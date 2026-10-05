@@ -11,7 +11,8 @@ class SignInScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Sign In / User Selection')),
       body: Center(
         child: ElevatedButton(
-          onPressed: () => Navigator.pushReplacementNamed(context, '/dashboard'),
+          onPressed: () =>
+              Navigator.pushReplacementNamed(context, '/dashboard'),
           child: const Text('Continue (placeholder)'),
         ),
       ),

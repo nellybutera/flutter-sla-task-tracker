@@ -7,9 +7,9 @@ class AppTheme {
   static const Color seed = Color(0xFF1F3864);
 
   static ThemeData get light => ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: seed),
-        useMaterial3: true,
-      );
+    colorScheme: ColorScheme.fromSeed(seedColor: seed),
+    useMaterial3: true,
+  );
 
   /// One color per SLA status, used by StatusChip and anywhere else.
   static Color colorFor(SlaStatus status) {

@@ -8,8 +8,8 @@ class User {
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'role': role};
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        role: (json['role'] as String?) ?? 'Developer',
-      );
+    id: json['id'] as String,
+    name: json['name'] as String,
+    role: (json['role'] as String?) ?? 'Developer',
+  );
 }

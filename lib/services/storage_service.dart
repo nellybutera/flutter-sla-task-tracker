@@ -29,7 +29,9 @@ class StorageService {
   Future<void> _writeTasks(List<Task> tasks) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        _tasksKey, jsonEncode(tasks.map((t) => t.toJson()).toList()));
+      _tasksKey,
+      jsonEncode(tasks.map((t) => t.toJson()).toList()),
+    );
   }
 
   /// Adds the task, or replaces the existing one with the same id.
@@ -65,7 +67,9 @@ class StorageService {
   Future<void> _writeUsers(List<User> users) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-        _usersKey, jsonEncode(users.map((u) => u.toJson()).toList()));
+      _usersKey,
+      jsonEncode(users.map((u) => u.toJson()).toList()),
+    );
   }
 
   Future<void> saveUser(User user) async {

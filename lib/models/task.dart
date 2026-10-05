@@ -42,24 +42,24 @@ class Task {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'description': description,
-        'assigneeId': assigneeId,
-        'priority': priority.name,
-        'deadline': deadline.toIso8601String(),
-        'isCompleted': isCompleted,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'description': description,
+    'assigneeId': assigneeId,
+    'priority': priority.name,
+    'deadline': deadline.toIso8601String(),
+    'isCompleted': isCompleted,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
-        id: json['id'] as String,
-        title: json['title'] as String,
-        description: (json['description'] as String?) ?? '',
-        assigneeId: json['assigneeId'] as String,
-        priority: Priority.values.byName(json['priority'] as String),
-        deadline: DateTime.parse(json['deadline'] as String),
-        isCompleted: (json['isCompleted'] as bool?) ?? false,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
+    id: json['id'] as String,
+    title: json['title'] as String,
+    description: (json['description'] as String?) ?? '',
+    assigneeId: json['assigneeId'] as String,
+    priority: Priority.values.byName(json['priority'] as String),
+    deadline: DateTime.parse(json['deadline'] as String),
+    isCompleted: (json['isCompleted'] as bool?) ?? false,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
 }
