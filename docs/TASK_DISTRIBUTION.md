@@ -34,13 +34,29 @@ Every member gets the same shape of work: 2 screens, 1 service or logic module, 
 ## Review pairs (keeps credit and understanding spread)
 A reviews B, B reviews C, C reviews A.
 
-## Timeline
-| Dates | Goal |
-|---|---|
-| Oct 5-6 | Repo, branches, tracker. A pushes skeleton and models. Agree the At Risk rule. |
-| Oct 7-9 | Each member builds their screens and service on their own branch; first PRs open |
-| Oct 10 | Integration check-in; merge into `main` |
-| Oct 11-12 | Wire everything together, persistence, polish. Feature freeze Oct 12 |
-| Oct 13 | Bug fixes, cleanup, rehearse explaining your code |
-| Oct 14 | Record demo (10-15 min, everyone speaks) and write reports |
-| Oct 15 | Assemble PDF and submit. Oct 16 is buffer |
+## Roles beyond code
+- Design lead: Member B (theme, colors, typography, spacing, consistency review of every screen)
+- Integration lead: Member A (owns `main`, merges PRs, resolves conflicts)
+- QA / demo lead: Member C (test checklist, demo script, recording)
+
+## Dependencies (who is waiting on whom)
+| Needs | From | Why |
+|---|---|---|
+| `Task`, `User` models and `StorageService` interface | A | Everyone's screens read and write tasks. A pushes these within the first 2 hours, as stubs if needed |
+| `SlaService.statusFor(task)` signature | B | Dashboard, task card, details and list all show the status. B pushes the signature first, logic after |
+| Theme and navigation shell | B | Every screen plugs into it. Until it lands, build screens as plain widgets |
+| `StatusChip` and `TaskCard` widgets | C | Dashboard, list and details reuse them |
+| `Validators` | C | Sign-in (A) uses the name validator |
+| Create/Edit form | C | Details (A) calls it for Edit |
+
+Rule: agree the method signatures in the first 30 minutes, push empty stubs, then everyone works in parallel.
+
+## 3-day plan
+| When | Member A | Member B | Member C |
+|---|---|---|---|
+| Day 1 morning | Skeleton, models, storage stubs pushed to main (blocker for others) | SLA signature + theme + navigation shell pushed | Validators, StatusChip, TaskCard |
+| Day 1 afternoon | Storage implementation, Sign-In screen | SLA logic, stats service, Dashboard | Task List screen, start Create/Edit form |
+| Day 2 morning | Task Details screen, delete flow | Team screen, polish theme across screens | Finish Create/Edit form and validation |
+| Day 2 afternoon | Merge all PRs into main, fix conflicts, test persistence | Unit tests for SLA and stats, design review | Unit tests for validators, full test checklist run |
+| Day 3 morning | Bug fixes, tracker, AI declaration | Bug fixes, report (3 pages) | Bug fixes, technical report, demo script |
+| Day 3 afternoon | Record demo (everyone speaks), assemble PDF, submit | | |
