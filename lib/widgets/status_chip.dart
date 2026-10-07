@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/sla_status.dart';
 import '../theme/app_theme.dart';
 
-/// OWNER: Member C. Basic version so every screen can use it; polish as needed.
+/// OWNER: Member C.
 class StatusChip extends StatelessWidget {
   final SlaStatus status;
   const StatusChip({super.key, required this.status});
@@ -11,10 +11,24 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = AppTheme.colorFor(status);
-    return Chip(
-      label: Text(status.label, style: const TextStyle(color: Colors.white)),
-      backgroundColor: color,
-      visualDensity: VisualDensity.compact,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundFor(status),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppTheme.iconFor(status), size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(
+            status.label,
+            style: Theme.of(context).textTheme.labelMedium
+                ?.copyWith(color: color, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 }
