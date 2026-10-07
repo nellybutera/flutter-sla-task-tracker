@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'routes.dart';
+import 'screens/sign_in_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -15,7 +16,9 @@ class TaskTrackerApp extends StatelessWidget {
     return MaterialApp(
       title: 'SLA Task Tracker',
       theme: AppTheme.light,
-      initialRoute: Routes.signIn,
+      // home instead of initialRoute: '/signin' because initialRoute also
+      // pushed '/' under it and we got a back arrow on the dashboard
+      home: const SignInScreen(),
       onGenerateRoute: Routes.generate,
     );
   }
