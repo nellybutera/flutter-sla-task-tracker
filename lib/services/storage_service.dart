@@ -98,4 +98,11 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_currentUserKey, userId);
   }
+
+  /// For sign out / switch user. Call it before going to Sign In, otherwise
+  /// Sign In sees the saved user and skips straight to the dashboard.
+  Future<void> clearCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_currentUserKey);
+  }
 }
