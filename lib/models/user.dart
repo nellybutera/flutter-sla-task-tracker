@@ -5,6 +5,17 @@ class User {
 
   const User({required this.id, required this.name, this.role = 'Developer'});
 
+  String get initials {
+    final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+    if (words.isEmpty) {
+      return '?';
+    }
+    return words
+        .take(2)
+        .map((word) => String.fromCharCode(word.runes.first).toUpperCase())
+        .join();
+  }
+
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'role': role};
 
   factory User.fromJson(Map<String, dynamic> json) => User(

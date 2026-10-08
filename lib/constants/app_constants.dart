@@ -8,4 +8,11 @@ class AppConstants {
   static const int descriptionMaxLength = 300;
   static const int userNameMinLength = 2;
   static const int userNameMaxLength = 30;
+
+  static const List<String> userRoles = [
+    'Developer',
+    'Designer',
+    'QA Tester',
+    'Project Lead',
+  ];
 }

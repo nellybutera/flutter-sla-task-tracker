@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sla_task_tracker/models/task.dart';
+import 'package:sla_task_tracker/models/user.dart';
 import 'package:sla_task_tracker/services/storage_service.dart';
 
 void main() {
@@ -20,6 +21,12 @@ void main() {
     expect(copy.deadline, task.deadline);
   });
 
+  test('User.initials takes the first letter of up to two words', () {
+    expect(const User(id: 'a', name: 'alice').initials, 'A');
+    expect(const User(id: 'b', name: ' Jean  Paul Doe ').initials, 'JP');
+    expect(const User(id: 'c', name: '   ').initials, '?');
+  });
+
   test('StorageService saves, updates and deletes tasks', () async {
     SharedPreferences.setMockInitialValues({});
     final storage = StorageService();
@@ -37,5 +44,18 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final users = await StorageService().loadUsers();
     expect(users.length, 3);
+  });
+
+  test('current user is saved, loaded and cleared', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = StorageService();
+
+    await storage.setCurrentUser('u2');
+    final signedIn = await storage.loadCurrentUser();
+    await storage.clearCurrentUser();
+    final signedOut = await storage.loadCurrentUser();
+
+    expect(signedIn?.name, 'Brian');
+    expect(signedOut, isNull);
   });
 }
