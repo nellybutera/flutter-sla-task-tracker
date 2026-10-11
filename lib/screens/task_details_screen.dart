@@ -5,6 +5,7 @@ import '../models/user.dart';
 import '../routes.dart';
 import '../services/sla_service.dart';
 import '../services/storage_service.dart';
+import '../utils/date_text.dart';
 import '../widgets/status_chip.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -49,14 +50,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
         _isLoading = false;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
       });
 
-      _showError('Could not load task details: $error');
+      _showError('Could not load task details. Please try again.');
     }
   }
 
@@ -98,14 +99,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Task marked as completed.')),
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
         _isWorking = false;
       });
 
-      _showError('Could not complete task: $error');
+      _showError('Could not complete the task. Please try again.');
     }
   }
 
@@ -134,7 +135,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       },
     );
 
-    if (shouldDelete != true) return;
+    if (shouldDelete != true || !mounted) return;
 
     setState(() {
       _isWorking = true;
@@ -146,34 +147,20 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
       if (!mounted) return;
 
       Navigator.of(context).pop();
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
         _isWorking = false;
       });
 
-      _showError('Could not delete task: $error');
+      _showError('Could not delete the task. Please try again.');
     }
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
-
-  String _formatTime(DateTime date) {
-    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-
-    return '$hour:$minute $period';
   }
 
   @override
@@ -206,9 +193,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                   style: Theme.of(context).textTheme.headlineSmall
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
-
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     const Text(
@@ -219,42 +204,28 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     StatusChip(status: status),
                   ],
                 ),
-
                 const Divider(height: 32),
-
                 _InfoRow(
                   label: 'Description',
                   value: _task.description.isEmpty
                       ? 'No description'
                       : _task.description,
                 ),
-
                 _InfoRow(
                   label: 'Assignee',
                   value: _assignee?.name ?? 'Unknown',
                 ),
-
                 _InfoRow(label: 'Role', value: _assignee?.role ?? 'Unknown'),
-
-                _InfoRow(
-                  label: 'Priority',
-                  value: _task.priority.name.toUpperCase(),
-                ),
-
+                _InfoRow(label: 'Priority', value: _task.priority.label),
                 _InfoRow(
                   label: 'Deadline',
-                  value:
-                      '${_formatDate(_task.deadline)} at '
-                      '${_formatTime(_task.deadline)}',
+                  value: DateText.deadline(_task.deadline, now: DateTime.now()),
                 ),
-
                 _InfoRow(
                   label: 'Completed',
                   value: _task.isCompleted ? 'Yes' : 'No',
                 ),
-
                 const SizedBox(height: 24),
-
                 FilledButton.icon(
                   onPressed: _task.isCompleted || _isWorking
                       ? null
@@ -270,9 +241,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                     _task.isCompleted ? 'Completed' : 'Mark as Complete',
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 OutlinedButton.icon(
                   onPressed: _isWorking ? null : _editTask,
                   icon: const Icon(Icons.edit),
