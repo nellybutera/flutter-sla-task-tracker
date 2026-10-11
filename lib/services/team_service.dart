@@ -2,6 +2,7 @@ import '../models/sla_status.dart';
 import '../models/task.dart';
 import '../models/user.dart';
 import 'sla_service.dart';
+import 'task_filters.dart';
 
 /// One team member together with the tasks assigned to them.
 class MemberSummary {
@@ -39,14 +40,18 @@ class TeamService {
       for (final user in users)
         _summaryFor(
           user,
-          tasks.where((task) => task.assigneeId == user.id).toList(),
+          // Reuses the task list sort: earliest deadline first, ties broken
+          // by title so the order never jumps around.
+          TaskFilters.apply(
+            tasks.where((task) => task.assigneeId == user.id).toList(),
+            now: current,
+          ),
           current,
         ),
     ];
   }
 
   static MemberSummary _summaryFor(User user, List<Task> tasks, DateTime now) {
-    tasks.sort((a, b) => a.deadline.compareTo(b.deadline));
     final overdueCount = tasks
         .where(
           (task) => SlaService.statusFor(task, now: now) == SlaStatus.overdue,

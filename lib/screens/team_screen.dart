@@ -245,6 +245,7 @@ class _Figure extends StatelessWidget {
         children: [
           Text(
             '$value',
+            key: Key('figure-${label.toLowerCase()}'),
             style: theme.textTheme.headlineSmall?.copyWith(color: color),
           ),
           Text(
@@ -283,22 +284,21 @@ class _MemberTile extends StatelessWidget {
         collapsedShape: const Border(),
         leading: CircleAvatar(child: Text(user.initials)),
         title: Text(isCurrentUser ? '${user.name} (you)' : user.name),
-        subtitle: Text(
-          '${user.role}  ·  $count ${count == 1 ? 'task' : 'tasks'}',
-        ),
-        trailing: summary.overdueCount > 0
-            ? Chip(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${user.role}  ·  $count ${count == 1 ? 'task' : 'tasks'}'),
+            if (summary.overdueCount > 0)
+              Text(
+                '${summary.overdueCount} overdue',
                 key: Key('overdue-${user.id}'),
-                label: Text('${summary.overdueCount} overdue'),
-                labelStyle: theme.textTheme.labelMedium?.copyWith(
+                style: theme.textTheme.labelMedium?.copyWith(
                   color: AppTheme.colorFor(SlaStatus.overdue),
                   fontWeight: FontWeight.w600,
                 ),
-                backgroundColor: AppTheme.backgroundFor(SlaStatus.overdue),
-                side: BorderSide.none,
-                visualDensity: VisualDensity.compact,
-              )
-            : null,
+              ),
+          ],
+        ),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
         children: [
           if (summary.tasks.isEmpty)

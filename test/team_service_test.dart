@@ -92,6 +92,22 @@ void main() {
       ]);
     });
 
+    test('tasks with the same deadline are ordered by title', () {
+      final tasks = [
+        makeTask('b', 'u1', const Duration(days: 2)).copyWith(title: 'Banana'),
+        makeTask('a', 'u1', const Duration(days: 2)).copyWith(title: 'apple'),
+        makeTask('c', 'u1', const Duration(days: 2)).copyWith(title: 'Cherry'),
+      ];
+
+      final result = TeamService.summarize(const [alice], tasks, now: now);
+
+      expect(result.single.tasks.map((task) => task.title), [
+        'apple',
+        'Banana',
+        'Cherry',
+      ]);
+    });
+
     test('ignores tasks assigned to an unknown user', () {
       final tasks = [makeTask('1', 'ghost', const Duration(days: 1))];
 
