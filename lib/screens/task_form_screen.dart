@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../constants/app_constants.dart';
 import '../models/task.dart';
 import '../models/user.dart';
 import '../services/storage_service.dart';
 import '../services/validators.dart';
+import '../utils/date_text.dart';
 
 class TaskFormScreen extends StatefulWidget {
   final Task? task;
@@ -18,7 +20,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-
   final _storage = StorageService();
 
   List<User> _users = [];
@@ -26,7 +27,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   Priority _priority = Priority.medium;
   DateTime? _deadline;
   bool _isCompleted = false;
-
   bool _isLoadingUsers = true;
   bool _isSaving = false;
 
@@ -37,7 +37,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     super.initState();
 
     final task = widget.task;
-
     if (task != null) {
       _titleController.text = task.title;
       _descriptionController.text = task.description;
@@ -53,14 +52,13 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   Future<void> _loadUsers() async {
     try {
       final users = await _storage.loadUsers();
-
       if (!mounted) return;
 
       setState(() {
         _users = users;
         _isLoadingUsers = false;
       });
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
@@ -68,7 +66,9 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load team members: $error')),
+        const SnackBar(
+          content: Text('Could not load team members. Please try again.'),
+        ),
       );
     }
   }
@@ -82,7 +82,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   Future<void> _selectDeadline() async {
     final now = DateTime.now();
-
     final selectedDate = await showDatePicker(
       context: context,
       initialDate: _deadline ?? now,
@@ -113,16 +112,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       );
     });
 
-    // Re-run validation after choosing a new date/time.
     _formKey.currentState?.validate();
   }
 
   Future<void> _saveTask() async {
     final isValid = _formKey.currentState?.validate() ?? false;
-
-    if (!isValid || _deadline == null || _assigneeId == null) {
-      return;
-    }
+    if (!isValid || _deadline == null || _assigneeId == null) return;
 
     setState(() {
       _isSaving = true;
@@ -130,9 +125,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
     try {
       final now = DateTime.now();
-
       final task = Task(
-        id: widget.task?.id ?? 'task-${DateTime.now().microsecondsSinceEpoch}',
+        id: widget.task?.id ?? 'task-${now.microsecondsSinceEpoch}',
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         assigneeId: _assigneeId!,
@@ -143,37 +137,22 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       );
 
       await _storage.saveTask(task);
-
       if (!mounted) return;
 
       Navigator.of(context).pop(task);
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
         _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Could not save task: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save the task. Please try again.'),
+        ),
+      );
     }
-  }
-
-  String _formatDeadline(DateTime? deadline) {
-    if (deadline == null) {
-      return 'No deadline selected';
-    }
-
-    final date =
-        '${deadline.day.toString().padLeft(2, '0')}/'
-        '${deadline.month.toString().padLeft(2, '0')}/'
-        '${deadline.year}';
-
-    final hour = deadline.hour % 12 == 0 ? 12 : deadline.hour % 12;
-    final minute = deadline.minute.toString().padLeft(2, '0');
-    final period = deadline.hour >= 12 ? 'PM' : 'AM';
-
-    return '$date at $hour:$minute $period';
   }
 
   @override
@@ -197,9 +176,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                     textInputAction: TextInputAction.next,
                     validator: Validators.title,
                   ),
-
                   const SizedBox(height: 16),
-
                   TextFormField(
                     controller: _descriptionController,
                     decoration: const InputDecoration(
@@ -208,12 +185,10 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       border: OutlineInputBorder(),
                     ),
                     maxLines: 4,
-                    maxLength: 300,
+                    maxLength: AppConstants.descriptionMaxLength,
                     validator: Validators.description,
                   ),
-
                   const SizedBox(height: 16),
-
                   DropdownButtonFormField<String>(
                     initialValue: _assigneeId,
                     decoration: const InputDecoration(
@@ -235,9 +210,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                     },
                     validator: Validators.assignee,
                   ),
-
                   const SizedBox(height: 16),
-
                   DropdownButtonFormField<Priority>(
                     initialValue: _priority,
                     decoration: const InputDecoration(
@@ -248,7 +221,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                         .map(
                           (priority) => DropdownMenuItem<Priority>(
                             value: priority,
-                            child: Text(priority.name.toUpperCase()),
+                            child: Text(priority.label),
                           ),
                         )
                         .toList(),
@@ -260,17 +233,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       });
                     },
                   ),
-
                   const SizedBox(height: 16),
-
                   FormField<DateTime>(
                     initialValue: _deadline,
-                    validator: (_) {
-                      return Validators.deadline(
-                        _deadline,
-                        isNewTask: !_isEditing,
-                      );
-                    },
+                    validator: (_) =>
+                        Validators.deadline(_deadline, isNewTask: !_isEditing),
                     builder: (field) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,10 +248,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                             label: Text(
                               _deadline == null
                                   ? 'Choose deadline'
-                                  : _formatDeadline(_deadline),
+                                  : DateText.deadline(
+                                      _deadline!,
+                                      now: DateTime.now(),
+                                    ),
                             ),
                           ),
-
                           if (field.hasError)
                             Padding(
                               padding: const EdgeInsets.only(left: 12, top: 8),
@@ -300,10 +269,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       );
                     },
                   ),
-
                   if (_isEditing) ...[
                     const SizedBox(height: 16),
-
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Completed'),
@@ -316,9 +283,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       },
                     ),
                   ],
-
                   const SizedBox(height: 24),
-
                   FilledButton.icon(
                     onPressed: _isSaving ? null : _saveTask,
                     icon: _isSaving
