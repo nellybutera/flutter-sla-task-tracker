@@ -1,18 +1,41 @@
-# SLA Task Tracker (Flutter)
+# SLA Task Tracker
 
-A Flutter mobile app for a small software team to create tasks, assign them, set deadlines and see SLA status (On Track, At Risk, Overdue, Completed). No backend; data is stored locally with SharedPreferences.
+We built this Flutter app for small software teams who want to see, at a glance, which tasks are on track and which are slipping. You create tasks, assign them to teammates, set a priority and a deadline, and the app tells you whether each one is **On Track**, **At Risk**, **Overdue** or **Completed**.
+
+Everything runs on the phone. There's no backend: tasks, team members and accounts are saved locally with SharedPreferences.
+
+## Try it
+
+1. Run the app on an emulator or a phone (see [Run it](#run-it)).
+2. Sign in as `alice@demo.com` with the password `Demo1234`, or create your own account.
+3. Go to Tasks, tap **New task** and give it a deadline one hour from now. It shows up as At Risk.
+4. Edit it and move the deadline to yesterday. Now it's Overdue. Mark it done and it becomes Completed.
+5. Close the app and open it again. You're still signed in and your tasks are still there.
+
+## How we decide a task's status
+
+The checks run in this order, and the first one that fits wins:
+
+1. **Completed**: the task is marked done, even if it was late.
+2. **Overdue**: it's not done and the deadline has passed.
+3. **At Risk**: it's not done and there are less than 48 hours left.
+4. **On Track**: everything else.
+
+We picked 48 hours because it gives the team two working days to finish the task, hand it to someone else or ask for help. The value lives in `lib/constants/app_constants.dart`, so it's easy to change.
 
 ## Screens
-1. Sign In and Sign Up (email and password)
-2. Project Dashboard
-3. Task List
-4. Task Details
-5. Create / Edit Task
-6. Team Members
-7. Profile (your task counts and Sign out)
+
+1. **Sign In and Sign Up**: email and password, with a validated sign-up form
+2. **Dashboard**: overall progress, a count for each status, and the tasks that need attention
+3. **Task List**: filter by status, priority and assignee, and sort
+4. **Task Details**: mark a task done, edit it or delete it
+5. **Create / Edit Task**: a validated form for every task field
+6. **Team Members**: everyone's tasks and how many are overdue
+7. **Profile**: your own task counts and Sign out
 
 ## Demo accounts
-Three sample accounts are created on first launch. You can also create your own with Sign Up.
+
+Three accounts are created the first time the app opens. You can also make your own with Sign Up.
 
 | Name | Email | Password |
 | --- | --- | --- |
@@ -20,48 +43,69 @@ Three sample accounts are created on first launch. You can also create your own 
 | Brian (Developer) | brian@demo.com | Demo1234 |
 | Chloe (Designer) | chloe@demo.com | Demo1234 |
 
-There is no backend: accounts live on the device. Passwords are never stored as text, only as a salted SHA-256 hash.
+Accounts only exist on the device. We never save passwords as text, only a salted SHA-256 hash.
 
-## Structure
+## Who built what
+
+| Member | Part |
+| --- | --- |
+| Belyse Intwaza | Sign In and Sign Up (accounts and passwords), Task List with filters and sorting, Profile |
+| Kevin Manzi | Create / Edit Task form and its validation, Task Details |
+| Teta Butera Nelly | Project setup and storage, the SLA rule, Dashboard, Team Members, theme |
+
+## Project structure
+
 ```
 lib/
-  main.dart             App entry point and theme
-  routes.dart           Route names and screen routing
-  constants/            app_constants (rule values: 48-hour risk window, length limits, roles)
-  models/               Task, User, SlaStatus
-  services/             Business logic, no Flutter UI code
-                          storage_service   save and load tasks and users
-                          sla_service       decides a task's SLA status
-                          stats_service     dashboard numbers
-                          team_service      groups tasks by member
+  main.dart             starts the app
+  routes.dart           names the route for every screen
+  constants/            app_constants: the 48-hour window, length limits, roles
+  models/               Task, User, Credential, SlaStatus
+  services/             the rules and storage, with no Flutter UI code
+                          storage_service   saves tasks, users, hashed passwords and who's signed in
+                          auth_service      sign in and sign up
+                          password_hasher   salted SHA-256 password hashing
+                          sla_service       decides each task's status
+                          stats_service     the dashboard numbers
+                          team_service      groups tasks by team member
                           task_filters      filtering and sorting for the task list
                           validators        task form rules
-                          user_validator    user name rule for Sign In
-  screens/              One file per screen, plus home_shell (bottom navigation)
-  widgets/              Shared UI pieces: status_chip, task_card, error_view
-  theme/                app_theme (colors and styles)
-  utils/                date_text (date and time wording)
-test/                   Unit tests for services, widget tests for screens
+                          user_validator    name, email and password rules
+  screens/              one file per screen, plus home_shell (the bottom bar)
+  widgets/              shared pieces: task_card, status_chip, error_view, password_field
+  theme/                app_theme: colors and styles
+  utils/                date_text: readable dates like "Tue 6 Oct, 17:00"
+test/                   unit tests for the rules, widget tests for the screens
 .github/                CI workflow and pull request template
-android/, ios/          Platform projects (generated by Flutter)
+android/, ios/          platform projects generated by Flutter
 ```
 
-Screens show data and react to taps. Rules and calculations live in `services/`.
+Screens only show data and react to taps. Anything that's a rule lives in `services/`, which is what makes it easy to test.
 
-## Run
+## Run it
+
 ```
 flutter pub get
-flutter run        # on an emulator or a physical device
+flutter run        # on an emulator or a physical phone
 flutter test
 ```
 
+The app is made for phones, so please run it on an emulator or a device rather than in a browser.
+
 ## Checks
-CI runs on every pull request and must pass before merging:
+
+Every pull request runs these on GitHub, and they all have to pass before we merge:
+
 ```
 dart format lib test
 flutter analyze
 flutter test
 ```
 
-## Branches
-Each member works on their own `feature/...` branch and merges into `main` through a pull request.
+## How we work
+
+Each of us works on our own `feature/...` branch and merges into `main` through a pull request that a teammate reviews.
+
+## Demo video
+
+https://drive.google.com/drive/folders/1Um8Ei6muTIMj3HNa0L3oFzpVn3tDqh01?usp=drive_link
