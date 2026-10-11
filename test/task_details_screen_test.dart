@@ -5,9 +5,9 @@ import 'package:sla_task_tracker/models/task.dart';
 import 'package:sla_task_tracker/routes.dart';
 import 'package:sla_task_tracker/screens/task_details_screen.dart';
 import 'package:sla_task_tracker/services/storage_service.dart';
+import 'package:sla_task_tracker/utils/date_text.dart';
 
 void main() {
-  // Seed users: u1 Alice (Project Lead), u2 Brian, u3 Chloe.
   Task makeTask({
     Duration fromNow = const Duration(days: 5),
     bool isCompleted = false,
@@ -24,13 +24,14 @@ void main() {
     );
   }
 
-  /// Opens the details on top of a home page, so we can tell when it closes.
+  /// Opens task details on top of a home page.
   Future<void> openDetails(WidgetTester tester, Task task) async {
     tester.view.physicalSize = const Size(800, 1800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
     await StorageService().saveTask(task);
+
     await tester.pumpWidget(
       MaterialApp(
         routes: {
@@ -55,6 +56,7 @@ void main() {
         ),
       ),
     );
+
     await tester.tap(find.text('open details'));
     await tester.pumpAndSettle();
   }
@@ -68,6 +70,26 @@ void main() {
     expect(find.text('First draft'), findsOneWidget);
     expect(find.text('Alice'), findsOneWidget);
     expect(find.text('Project Lead'), findsOneWidget);
+  });
+
+  testWidgets('shows the priority using its shared label', (tester) async {
+    await openDetails(tester, makeTask());
+
+    expect(find.text(Priority.high.label), findsOneWidget);
+  });
+
+  testWidgets('shows the deadline using the shared date formatter', (
+    tester,
+  ) async {
+    final task = makeTask();
+    await openDetails(tester, task);
+
+    final expectedDeadline = DateText.deadline(
+      task.deadline,
+      now: DateTime.now(),
+    );
+
+    expect(find.text(expectedDeadline), findsOneWidget);
   });
 
   testWidgets('shows On Track for a task due in five days', (tester) async {
@@ -118,12 +140,14 @@ void main() {
     await openDetails(tester, makeTask(isCompleted: true));
 
     expect(find.text('Mark as Complete'), findsNothing);
+
     final button = tester.widget<ButtonStyleButton>(
       find.ancestor(
         of: find.text('Completed').last,
         matching: find.bySubtype<ButtonStyleButton>(),
       ),
     );
+
     expect(button.onPressed, isNull);
   });
 
@@ -149,6 +173,7 @@ void main() {
 
     testWidgets('Cancel keeps the task', (tester) async {
       await openDetails(tester, makeTask());
+
       await tester.tap(find.byTooltip('Delete task'));
       await tester.pumpAndSettle();
 
@@ -163,6 +188,7 @@ void main() {
       tester,
     ) async {
       await openDetails(tester, makeTask());
+
       await tester.tap(find.byTooltip('Delete task'));
       await tester.pumpAndSettle();
 
