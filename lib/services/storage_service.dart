@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/credential.dart';
 import '../models/task.dart';
 import '../models/user.dart';
 
@@ -11,11 +12,18 @@ class StorageService {
   static const _tasksKey = 'tasks';
   static const _usersKey = 'users';
   static const _currentUserKey = 'currentUserId';
+  static const _credentialsKey = 'credentials';
 
-  static const _seedUsers = [
-    User(id: 'u1', name: 'Alice', role: 'Project Lead'),
-    User(id: 'u2', name: 'Brian', role: 'Developer'),
-    User(id: 'u3', name: 'Chloe', role: 'Designer'),
+  /// Demo accounts saved on first launch (password: AuthService.demoPassword).
+  static const seedUsers = [
+    User(
+      id: 'u1',
+      name: 'Alice',
+      role: 'Project Lead',
+      email: 'alice@demo.com',
+    ),
+    User(id: 'u2', name: 'Brian', role: 'Developer', email: 'brian@demo.com'),
+    User(id: 'u3', name: 'Chloe', role: 'Designer', email: 'chloe@demo.com'),
   ];
 
   Future<List<Task>> loadTasks() async {
@@ -57,8 +65,8 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_usersKey);
     if (raw == null) {
-      await _writeUsers(_seedUsers);
-      return List.of(_seedUsers);
+      await _writeUsers(seedUsers);
+      return List.of(seedUsers);
     }
     final list = jsonDecode(raw) as List<dynamic>;
     return list.map((e) => User.fromJson(e as Map<String, dynamic>)).toList();
@@ -99,10 +107,33 @@ class StorageService {
     await prefs.setString(_currentUserKey, userId);
   }
 
-  /// For sign out / switch user. Call it before going to Sign In, otherwise
+  /// For sign out. Call it before going to Sign In, otherwise
   /// Sign In sees the saved user and skips straight to the dashboard.
   Future<void> clearCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_currentUserKey);
+  }
+
+  /// Password hashes, keyed by user id. Kept apart from the users list so
+  /// screens that show users never handle them.
+  Future<Map<String, Credential>> loadCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_credentialsKey);
+    if (raw == null) return {};
+    final map = jsonDecode(raw) as Map<String, dynamic>;
+    return map.map(
+      (userId, value) =>
+          MapEntry(userId, Credential.fromJson(value as Map<String, dynamic>)),
+    );
+  }
+
+  Future<void> saveCredential(String userId, Credential credential) async {
+    final credentials = await loadCredentials();
+    credentials[userId] = credential;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _credentialsKey,
+      jsonEncode(credentials.map((id, c) => MapEntry(id, c.toJson()))),
+    );
   }
 }

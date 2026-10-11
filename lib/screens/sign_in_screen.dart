@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../constants/app_constants.dart';
-import '../models/user.dart';
 import '../routes.dart';
+import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/user_validator.dart';
 import '../widgets/error_view.dart';
+import '../widgets/password_field.dart';
 
 class SignInScreen extends StatefulWidget {
   final StorageService? storage;
@@ -19,31 +19,34 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  static const double _maxContentWidth = 560;
+  static const double _maxContentWidth = 480;
 
   late final StorageService _storage = widget.storage ?? StorageService();
+  late final AuthService _auth = AuthService(storage: _storage);
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  List<User> _users = [];
-  String _newUserRole = AppConstants.userRoles.first;
-  bool _isLoading = true;
-  bool _isSaving = false;
+  bool _isCheckingSession = true;
+  bool _isSigningIn = false;
   String? _loadError;
+  String? _signInError;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_load());
+    unawaited(_checkSavedSession());
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
+  // someone already signed in on this phone goes straight to the dashboard
+  Future<void> _checkSavedSession() async {
     try {
       final currentUser = await _storage.loadCurrentUser();
       if (!mounted) return;
@@ -51,65 +54,60 @@ class _SignInScreenState extends State<SignInScreen> {
         _openDashboard();
         return;
       }
-      final users = await _storage.loadUsers();
-      if (!mounted) return;
-      setState(() {
-        _users = users;
-        _isLoading = false;
-      });
+      setState(() => _isCheckingSession = false);
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _isLoading = false;
-        _loadError = 'Could not load the team. Please try again.';
+        _isCheckingSession = false;
+        _loadError = 'Could not open the app. Please try again.';
       });
     }
   }
 
-  void _retryLoad() {
+  void _retry() {
     setState(() {
-      _isLoading = true;
+      _isCheckingSession = true;
       _loadError = null;
     });
-    unawaited(_load());
+    unawaited(_checkSavedSession());
   }
 
-  Future<void> _signInAs(User user) async {
-    setState(() => _isSaving = true);
-    try {
-      await _storage.setCurrentUser(user.id);
-      if (!mounted) return;
-      _openDashboard();
-    } catch (_) {
-      _onSaveFailed('Could not sign in. Please try again.');
-    }
-  }
-
-  Future<void> _addUserAndSignIn() async {
+  Future<void> _signIn() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
-    final user = User(
-      id: 'u${DateTime.now().microsecondsSinceEpoch}',
-      name: _nameController.text.trim(),
-      role: _newUserRole,
-    );
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSigningIn = true;
+      _signInError = null;
+    });
     try {
-      await _storage.saveUser(user);
-      await _storage.setCurrentUser(user.id);
+      await _auth.signIn(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
       if (!mounted) return;
       _openDashboard();
+    } on AuthException catch (error) {
+      _showSignInError(error.message);
     } catch (_) {
-      _onSaveFailed('Could not save ${user.name}. Please try again.');
+      _showSignInError('Could not sign in. Please try again.');
     }
   }
 
-  void _onSaveFailed(String message) {
+  void _showSignInError(String message) {
     if (!mounted) return;
-    setState(() => _isSaving = false);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    setState(() {
+      _isSigningIn = false;
+      _signInError = message;
+    });
+  }
+
+  void _clearSignInError(String _) {
+    if (_signInError != null) setState(() => _signInError = null);
+  }
+
+  void _openSignUp() {
+    unawaited(Navigator.pushNamed(context, Routes.signUp));
   }
 
   void _openDashboard() {
@@ -137,60 +135,90 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
+    if (_isCheckingSession) {
       return const Center(child: CircularProgressIndicator());
     }
     final loadError = _loadError;
     if (loadError != null) {
-      return ErrorView(message: loadError, onRetry: _retryLoad);
+      return ErrorView(message: loadError, onRetry: _retry);
     }
-    return CustomScrollView(
-      slivers: [
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 32, 16, 24),
-          sliver: SliverToBoxAdapter(child: _Header()),
-        ),
-        const SliverPadding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverToBoxAdapter(child: _SectionTitle('Team members')),
-        ),
-        if (_users.isEmpty)
-          const SliverPadding(
-            padding: EdgeInsets.all(16),
-            sliver: SliverToBoxAdapter(
-              child: Text('No team members yet. Add yourself below.'),
+    final signInError = _signInError;
+    final colors = Theme.of(context).colorScheme;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _Header(),
+            const SizedBox(height: 32),
+            TextFormField(
+              key: const Key('emailField'),
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.mail_outline),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              autovalidateMode: AutovalidateMode.onUserInteractionIfError,
+              validator: UserValidator.email,
+              onChanged: _clearSignInError,
             ),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList.builder(
-              itemCount: _users.length,
-              itemBuilder: (context, index) {
-                final user = _users[index];
-                return _UserTile(
-                  user: user,
-                  onTap: _isSaving ? null : () => _signInAs(user),
-                );
-              },
+            const SizedBox(height: 16),
+            PasswordField(
+              key: const Key('passwordField'),
+              controller: _passwordController,
+              label: 'Password',
+              validator: UserValidator.signInPassword,
+              textInputAction: TextInputAction.done,
+              onChanged: _clearSignInError,
+              onFieldSubmitted: (_) => _signIn(),
             ),
-          ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
-          sliver: SliverToBoxAdapter(
-            child: _AddUserForm(
-              formKey: _formKey,
-              nameController: _nameController,
-              existingNames: _users.map((u) => u.name),
-              role: _newUserRole,
-              // no setState needed, nothing else on screen uses the role
-              onRoleChanged: (role) => _newUserRole = role,
-              isSaving: _isSaving,
-              onSubmit: _addUserAndSignIn,
+            if (signInError != null) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.error_outline, color: colors.error, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      signInError,
+                      style: TextStyle(color: colors.error),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _isSigningIn ? null : _signIn,
+              child: _isSigningIn
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Sign in'),
             ),
-          ),
+            const SizedBox(height: 16),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Text("Don't have an account?"),
+                TextButton(
+                  onPressed: _openSignUp,
+                  child: const Text('Create one'),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -212,116 +240,13 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Choose your profile to continue',
+          "Sign in to see your team's tasks",
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
         ),
       ],
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
-    );
-  }
-}
-
-class _UserTile extends StatelessWidget {
-  final User user;
-  final VoidCallback? onTap;
-  const _UserTile({required this.user, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(child: Text(user.initials)),
-        title: Text(user.name),
-        subtitle: Text(user.role),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-class _AddUserForm extends StatelessWidget {
-  final GlobalKey<FormState> formKey;
-  final TextEditingController nameController;
-  final Iterable<String> existingNames;
-  final String role;
-  final ValueChanged<String> onRoleChanged;
-  final bool isSaving;
-  final VoidCallback onSubmit;
-
-  const _AddUserForm({
-    required this.formKey,
-    required this.nameController,
-    required this.existingNames,
-    required this.role,
-    required this.onRoleChanged,
-    required this.isSaving,
-    required this.onSubmit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _SectionTitle('New to the team?'),
-          TextFormField(
-            key: const Key('nameField'),
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Your name',
-              helperText:
-                  '${AppConstants.userNameMinLength} to '
-                  '${AppConstants.userNameMaxLength} characters',
-              prefixIcon: Icon(Icons.person_outline),
-            ),
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.done,
-            autovalidateMode: AutovalidateMode.onUserInteractionIfError,
-            validator: (value) =>
-                UserValidator.name(value, existingNames: existingNames),
-            onFieldSubmitted: (_) => onSubmit(),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: role,
-            decoration: const InputDecoration(
-              labelText: 'Role',
-              prefixIcon: Icon(Icons.work_outline),
-            ),
-            items: [
-              for (final option in AppConstants.userRoles)
-                DropdownMenuItem(value: option, child: Text(option)),
-            ],
-            onChanged: (value) {
-              if (value != null) onRoleChanged(value);
-            },
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: isSaving ? null : onSubmit,
-            icon: const Icon(Icons.person_add_alt_1),
-            label: const Text('Add me and continue'),
-          ),
-        ],
-      ),
     );
   }
 }

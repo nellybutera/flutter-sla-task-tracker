@@ -12,8 +12,8 @@ import '../theme/app_theme.dart';
 import '../widgets/error_view.dart';
 import '../widgets/task_card.dart';
 
-/// Shows the signed-in user's profile, lets them switch user, and lists every
-/// team member with their task counts. Tap a member to see their tasks.
+/// Lists every team member with their task counts. Tap a member to see their
+/// tasks.
 class TeamScreen extends StatefulWidget {
   /// Storage to read from. Tests pass a fake one; the app uses the default.
   final StorageService? storage;
@@ -70,28 +70,6 @@ class _TeamScreenState extends State<TeamScreen> {
     unawaited(_load());
   }
 
-  /// Forgets the signed-in user and goes back to the Sign In screen.
-  Future<void> _switchUser() async {
-    try {
-      await _storage.clearCurrentUser();
-      if (!mounted) return;
-      unawaited(
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          Routes.signIn,
-          (route) => false,
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not switch user. Please try again.'),
-        ),
-      );
-    }
-  }
-
   Future<void> _openDetails(Task task) async {
     await Navigator.pushNamed(context, Routes.taskDetails, arguments: task);
     if (!mounted) return;
@@ -116,10 +94,6 @@ class _TeamScreenState extends State<TeamScreen> {
     }
 
     final currentId = _currentUser?.id;
-    MemberSummary? mine;
-    for (final member in _members) {
-      if (member.user.id == currentId) mine = member;
-    }
 
     return Center(
       child: ConstrainedBox(
@@ -130,8 +104,6 @@ class _TeamScreenState extends State<TeamScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              _ProfileCard(summary: mine, onSwitchUser: _switchUser),
-              const SizedBox(height: 24),
               Text(
                 'Team (${_members.length})',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -146,115 +118,6 @@ class _TeamScreenState extends State<TeamScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  final MemberSummary? summary;
-  final VoidCallback onSwitchUser;
-
-  const _ProfileCard({required this.summary, required this.onSwitchUser});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final summary = this.summary;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  child: Text(
-                    summary?.user.initials ?? '?',
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        summary?.user.name ?? 'Not signed in',
-                        key: const Key('profileName'),
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      if (summary != null)
-                        Text(
-                          summary.user.role,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (summary != null) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  _Figure(label: 'Assigned', value: summary.totalCount),
-                  _Figure(label: 'Completed', value: summary.completedCount),
-                  _Figure(
-                    label: 'Overdue',
-                    value: summary.overdueCount,
-                    color: summary.overdueCount > 0
-                        ? AppTheme.colorFor(SlaStatus.overdue)
-                        : null,
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onSwitchUser,
-                icon: const Icon(Icons.switch_account_outlined),
-                label: const Text('Switch user'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Figure extends StatelessWidget {
-  final String label;
-  final int value;
-  final Color? color;
-
-  const _Figure({required this.label, required this.value, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            '$value',
-            key: Key('figure-${label.toLowerCase()}'),
-            style: theme.textTheme.headlineSmall?.copyWith(color: color),
-          ),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ),
     );
   }

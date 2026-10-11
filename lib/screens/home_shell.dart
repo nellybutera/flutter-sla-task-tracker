@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'dashboard_screen.dart';
+import 'profile_screen.dart';
 import 'task_list_screen.dart';
 import 'team_screen.dart';
 
@@ -16,7 +17,12 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   late int _index = widget.initialIndex;
 
-  static const _pages = [DashboardScreen(), TaskListScreen(), TeamScreen()];
+  static const _pages = [
+    DashboardScreen(),
+    TaskListScreen(),
+    TeamScreen(),
+    ProfileScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +38,7 @@ class _HomeShellState extends State<HomeShell> {
           ),
           NavigationDestination(icon: Icon(Icons.list_alt), label: 'Tasks'),
           NavigationDestination(icon: Icon(Icons.group), label: 'Team'),
+          NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );

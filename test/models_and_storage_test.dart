@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sla_task_tracker/models/credential.dart';
 import 'package:sla_task_tracker/models/task.dart';
 import 'package:sla_task_tracker/models/user.dart';
 import 'package:sla_task_tracker/services/storage_service.dart';
@@ -57,5 +58,43 @@ void main() {
 
     expect(signedIn?.name, 'Brian');
     expect(signedOut, isNull);
+  });
+
+  test('User keeps its email through toJson / fromJson', () {
+    const user = User(id: 'u9', name: 'Belyse', email: 'belyse@example.com');
+
+    final copy = User.fromJson(user.toJson());
+
+    expect(copy.email, 'belyse@example.com');
+  });
+
+  test('a user saved before emails existed loads with an empty email', () {
+    final old = User.fromJson({'id': 'u1', 'name': 'Alice'});
+
+    expect(old.email, '');
+    expect(old.role, 'Developer');
+  });
+
+  test('the demo users are seeded with their emails', () async {
+    SharedPreferences.setMockInitialValues({});
+
+    final users = await StorageService().loadUsers();
+
+    expect(users.map((u) => u.email), [
+      'alice@demo.com',
+      'brian@demo.com',
+      'chloe@demo.com',
+    ]);
+  });
+
+  test('credentials are saved and loaded by user id', () async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = StorageService();
+
+    await storage.saveCredential('u1', const Credential(salt: 's', hash: 'h'));
+    final credentials = await storage.loadCredentials();
+
+    expect(credentials['u1']?.salt, 's');
+    expect(credentials['u1']?.hash, 'h');
   });
 }
