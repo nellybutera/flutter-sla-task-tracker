@@ -77,34 +77,6 @@ void main() {
     makeTask('4', 'Fix login bug', 'u2', const Duration(hours: 2)),
   ];
 
-  testWidgets('shows the signed-in user as the profile', (tester) async {
-    await StorageService().setCurrentUser('u1');
-
-    await pumpTeam(tester);
-
-    expect(
-      tester.widget<Text>(find.byKey(const Key('profileName'))).data,
-      'Alice',
-    );
-    expect(find.text('Project Lead'), findsOneWidget);
-  });
-
-  testWidgets('profile shows assigned, completed and overdue counts', (
-    tester,
-  ) async {
-    await StorageService().setCurrentUser('u1');
-    await saveTasks(tasks);
-
-    await pumpTeam(tester);
-
-    // Alice: 3 assigned, 1 completed, 1 overdue.
-    String figure(String name) =>
-        tester.widget<Text>(find.byKey(Key('figure-$name'))).data!;
-    expect(figure('assigned'), '3');
-    expect(figure('completed'), '1');
-    expect(figure('overdue'), '1');
-  });
-
   testWidgets('every member row keeps its expand arrow', (tester) async {
     await StorageService().setCurrentUser('u1');
     await saveTasks(tasks);
@@ -178,17 +150,14 @@ void main() {
     expect(find.text('Details of Fix login bug'), findsOneWidget);
   });
 
-  testWidgets('switch user signs out and opens the sign in page', (
+  testWidgets('has no switch user button (sign out is on Profile)', (
     tester,
   ) async {
     await StorageService().setCurrentUser('u1');
+
     await pumpTeam(tester);
 
-    await tester.tap(find.text('Switch user'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Sign in page'), findsOneWidget);
-    expect(await StorageService().loadCurrentUser(), isNull);
+    expect(find.text('Switch user'), findsNothing);
   });
 
   testWidgets('shows an error with a retry button when loading fails', (

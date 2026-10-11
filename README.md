@@ -3,12 +3,24 @@
 A Flutter mobile app for a small software team to create tasks, assign them, set deadlines and see SLA status (On Track, At Risk, Overdue, Completed). No backend; data is stored locally with SharedPreferences.
 
 ## Screens
-1. Sign In / User Selection
+1. Sign In and Sign Up (email and password)
 2. Project Dashboard
 3. Task List
 4. Task Details
 5. Create / Edit Task
-6. Team Members / Profile
+6. Team Members
+7. Profile (your task counts and Sign out)
+
+## Demo accounts
+Three sample accounts are created on first launch. You can also create your own with Sign Up.
+
+| Name | Email | Password |
+| --- | --- | --- |
+| Alice (Project Lead) | alice@demo.com | Demo1234 |
+| Brian (Developer) | brian@demo.com | Demo1234 |
+| Chloe (Designer) | chloe@demo.com | Demo1234 |
+
+There is no backend: accounts live on the device. Passwords are never stored as text, only as a salted SHA-256 hash.
 
 ## Structure
 ```
